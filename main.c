@@ -107,5 +107,6 @@ void displayPatient() {
 }
 
 void dischargePatient() {
+    printf("discharge");
     return;
 }
