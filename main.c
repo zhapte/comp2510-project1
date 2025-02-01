@@ -28,10 +28,11 @@ void searchPatient();
 int main(void) {
     //the choice the user would make for the system
     int choice;
+    //while loop to keep the user selecting different option
     do {
 
         //prompt th user to choices
-        printf("Welcome to the Patient Management System.");
+        printf("Welcome to the Patient Management System.\n");
         printf("1. Add Patient\n");
         printf("2. Display Patient\n");
         printf("3. Discharge Patient\n");
@@ -107,11 +108,9 @@ void displayPatient() {
 }
 
 void dischargePatient() {
-    printf("discharge");
-    return;
+    printf("discharge\n");
 }
 
 void searchPatient() {
     printf("Please enter patient ID:\n");
-    return;
 }
