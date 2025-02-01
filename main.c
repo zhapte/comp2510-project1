@@ -22,7 +22,7 @@ int patientCounter = 0;
 void addPatient();
 void displayPatient();
 void dischargePatient();
-//void searchPatient();
+void searchPatient();
 
 
 int main(void) {
@@ -52,7 +52,7 @@ int main(void) {
                 dischargePatient();
                 break;
             case 4:
-                //searchPatient();
+                searchPatient();
                 break;
             case 5:
                 printf("Bye");
@@ -108,5 +108,10 @@ void displayPatient() {
 
 void dischargePatient() {
     printf("discharge");
+    return;
+}
+
+void searchPatient() {
+    printf("Please enter patient ID:\n");
     return;
 }
