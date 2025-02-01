@@ -4,7 +4,7 @@
 //the max number of patient to be added to the record
 #define MAX_PATIENT 50
 
-// structure of the patient ercord
+// structure of the patient record
 typedef struct{
     int     patientId;
     char    name[50];
@@ -21,7 +21,7 @@ int patientCounter = 0;
 
 void addPatient();
 void displayPatient();
-//void dischargePatient();
+void dischargePatient();
 //void searchPatient();
 
 
@@ -49,7 +49,7 @@ int main(void) {
                 displayPatient() ;
                 break;
             case 3:
-                //dischargePatient();
+                dischargePatient();
                 break;
             case 4:
                 //searchPatient();
@@ -104,4 +104,8 @@ void displayPatient() {
                patient[i].patientId, patient[i].name, patient[i].age,
                patient[i].diagnosis, patient[i].roomNumber);
     }
+}
+
+void dischargePatient() {
+    return;
 }
