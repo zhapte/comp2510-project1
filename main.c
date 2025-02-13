@@ -78,7 +78,7 @@ int main(void) {
                 printf("invalid Choice try again!\n");
                 break;
         }
-    }while(choice != 5);
+    }while(choice != 6);
     return 0;
 }
 
