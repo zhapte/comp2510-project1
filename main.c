@@ -56,7 +56,8 @@ int main(void) {
         printf("2. Display Patient\n");
         printf("3. Discharge Patient\n");
         printf("4. Search Patient\n");
-        printf("5. Exit\n");
+        printf("5. Doctor Scheduling\n");
+        printf("6. Exit\n");
         scanf("%d", &choice);
         getchar();
 
@@ -84,7 +85,7 @@ int main(void) {
                 printf("invalid Choice try again!\n");
                 break;
         }
-    }while(choice != 5);
+    }while(choice != 6);
     return 0;
 }
 
