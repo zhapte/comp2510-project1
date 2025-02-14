@@ -39,6 +39,7 @@ void displayPatient();
 void dischargePatient();
 void searchPatient();
 int findposition(int input);
+void initializeStack(Stack *stack);
 
 void initializeSchedule();
 void displaySchedule();
@@ -48,6 +49,7 @@ void doctorScheduleMenu();
 int main(void) {
     //the choice the user would make for the system
     int choice;
+    initializeStack(&position);
     //while loop to keep the user selecting different option
     do {
 
@@ -119,7 +121,7 @@ void addPatient() {
     getchar();
 
     //increase the patient count
-    return;
+    printf("Patient added successfuly")
 
 }
 
@@ -146,6 +148,7 @@ void dischargePatient() {
     patient[index].patientId = -1;
     position.top++;
     position.position[position.top] = index;
+    printf("Patient discharged successfully");
 }
 
 void searchPatient() {
