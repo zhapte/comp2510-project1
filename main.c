@@ -38,6 +38,7 @@ void addPatient();
 void displayPatient();
 void dischargePatient();
 void searchPatient();
+int findposition(int input);
 
 void initializeSchedule();
 void displaySchedule();
@@ -134,11 +135,41 @@ void displayPatient() {
 }
 
 void dischargePatient() {
-    printf("discharge\n");
+    int choice, index;
+    printf("enter the patient id to discharge\n");
+    scanf("%d", &choice);
+    index = findposition(choice);
+    if (index < 0) {
+        printf("Patient ID is not found!\n");
+        return;
+    }
+    patient[index].patientId = -1;
+    position.top++;
+    position.position[position.top] = index;
 }
 
 void searchPatient() {
+    int input, index;
     printf("Please enter patient ID:\n");
+    scanf("%d", input);
+    index = findposition(input);
+    if (index < 0) {
+        printf("Patient ID not found!\n");
+        return;
+    }
+    printf("%-10d %-20s %-5d %-20s %-10d\n",
+               patient[index].patientId, patient[index].name, patient[index].age,
+               patient[index].diagnosis, patient[index].roomNumber);
+
+}
+
+int findposition(int input) {
+    for (int i = 0; i < MAX_PATIENT; i++) {
+        if (patient[i].patientId == input) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void initializeStack(Stack *stack) {
@@ -150,7 +181,8 @@ void initializeStack(Stack *stack) {
     }
 }
 
-/* This function initializes the schedule,
+/*
+ * This function initializes the schedule,
  * the function sets all shifts as 'unassigned' to begin
  */
 void initializeSchedule() {
