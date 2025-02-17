@@ -79,6 +79,7 @@ int main(void) {
                 searchPatient();
                 break;
             case 5:
+                initializeSchedule();
                 doctorScheduleMenu();
                 break;
             case 6:
@@ -121,14 +122,14 @@ void addPatient() {
     getchar();
 
     //increase the patient count
-    printf("Patient added successfuly")
+    printf("Patient added successfuly\n2");
 
 }
 
 void displayPatient() {
     for (int i = 0; i < MAX_PATIENT; i++) {
         if (patient[i].patientId > 0) {
-            printf("%-10d %-20s %-5d %-20s %-10d\n",
+            printf("Patient ID: %-10d Patient Name: %-20s Age: %-5d Diagnosis: %-20s Room Number: %-10d\n",
                patient[i].patientId, patient[i].name, patient[i].age,
                patient[i].diagnosis, patient[i].roomNumber);
         }
@@ -191,7 +192,9 @@ void initializeStack(Stack *stack) {
 void initializeSchedule() {
     for (int i = 0; i < DAYS; i++) {
         for (int j = 0; j < SHIFTS; j++) {
-            strcpy(doctorSchedule[i][j], "Unassigned");
+            if (doctorSchedule[i][j][0] == '\0') {
+                strcpy(doctorSchedule[i][j], "Unassigned");
+            }
         }
     }
 }
@@ -218,25 +221,37 @@ void assignDoctor() {
     int shift;
     char doctorName[50];
 
+
     char *days[] = {"Monday", "Tuesday", "Wednesday", "Thursday",
                     "Friday", "Saturday", "Sunday"};
     char *shifts[] = {"Morning", "Afternoon", "Evening"};
 
-    printf("\nSelect a day (1-Monday to 7-Sunday): ");
-    scanf("%d", &day);
-    if (day < 1 || day > 7) {
-        printf("Invalid day!\n");
-        return;
+    while (1) {
+        printf("\nSelect a day (1-Monday to 7-Sunday): ");
+        if (scanf("%d", &day) == 1 && day >= 1 && day <= 7) {
+            break;
+        } else {
+            printf("Invalid day! Enter a number between 1 and 7.\n");
+            while (getchar() != '\n');
+        }
     }
 
-    printf("Select a shift (1-Morning, 2-Afternoon, 3-Evening): ");
-    scanf("%d", &shift);
-    if (shift < 1 || shift > 3) {
-        printf("Invalid shift!\n");
-        return;
+    while (1) {
+        printf("\nSelect a shift (1-Morning, 2-Afternoon, 3-Evening): ");
+        if (scanf("%d", &shift) == 1 && shift >= 1 && shift <= 3) {
+            break;
+        } else {
+            printf("Invalid shift! Enter a number between 1 and 3\n");
+            while (getchar() != '\n');
+        }
+
     }
+
+    while (getchar() != '\n');
     printf("Enter a doctor's name: ");
-    scanf("%s", &doctorName);
+    fgets(doctorName, 50, stdin);
+    doctorName[strcspn(doctorName, "\n")] = 0;
+   // scanf("%[^\n]s", &doctorName);
 
     strcpy(doctorSchedule[day - 1][shift - 1], doctorName);
 
