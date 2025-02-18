@@ -93,7 +93,7 @@ int main(void) {
     return 0;
 }
 
-// function to add a patiet to the record
+// function to add a patient to the record
 void addPatient() {
     if (position.top < 0) {
         printf("Hospital is full is full!\n");
