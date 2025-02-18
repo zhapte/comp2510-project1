@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 //the max number of patient to be added to the record
 #define MAX_PATIENT 50
@@ -33,24 +34,37 @@ Patient patient[MAX_PATIENT];
 //create the stack for patient position at the global level
 Stack position;
 
+//id to keep track of the patient
+int currentid;
 
+//function prototype.
 void addPatient();
 void displayPatient();
 void dischargePatient();
 void searchPatient();
-int findposition(int input);
+int findPosition(int input);
 void initializeStack(Stack *stack);
-
 void initializeSchedule();
 void displaySchedule();
 void assignDoctor();
 void doctorScheduleMenu();
+void menu();
+int numberInput();
 
+//main to display
 int main(void) {
-    //the choice the user would make for the system
-    int choice;
+    //initialize the stack for the position of the hosipital
     initializeStack(&position);
-    //while loop to keep the user selecting different option
+    //start the hopital with id of 1 ensure that id will be unique.
+    currentid = 1;
+    //call the menu;
+    menu();
+    return 0;
+}
+
+void menu() {
+    //choice for the user to enter
+    int choice;
     do {
 
         //prompt th user to choices
@@ -68,29 +82,28 @@ int main(void) {
         switch (choice) {
             case 1:
                 addPatient();
-                break;
+            break;
             case 2:
                 displayPatient() ;
-                break;
+            break;
             case 3:
                 dischargePatient();
-                break;
+            break;
             case 4:
                 searchPatient();
-                break;
+            break;
             case 5:
                 initializeSchedule();
                 doctorScheduleMenu();
-                break;
+            break;
             case 6:
                 printf("Exiting.");
-                return 0;
+                return;
             default:
                 printf("invalid Choice try again!\n");
-                break;
+            break;
         }
     }while(choice != 6);
-    return 0;
 }
 
 // function to add a patient to the record
@@ -99,34 +112,44 @@ void addPatient() {
         printf("Hospital is full is full!\n");
         return;
     }
+    //pop out the top most position to put the patient in to the struct
     int current = position.position[position.top];
     position.top--;
-    printf("Please enter patient ID:\n");
-    scanf("%d", &patient[current].patientId);
-    getchar();
 
+    //auto increment patient id is assigned.
+    printf("The Patient id is %d\n", currentid);
+    patient[current].patientId = currentid;
+    currentid++;
+
+    //take patient name and store in the struct
     printf("Please enter patient name:\n");
     scanf("%s", &patient[current].name);
     getchar();
 
     printf("Please enter patient age:\n");
-    scanf("%d", &patient[current].age);
-    getchar();
+    patient[current].age = numberInput();
 
+    //take the patient diagnosis
     printf("Please enter patient diagnosis:\n");
     scanf("%s", &patient[current].diagnosis);
     getchar();
 
+    //take the roomnumber for the patient
     printf("Please enter patient room number:\n");
-    scanf("%d", &patient[current].roomNumber);
-    getchar();
+    patient[current].roomNumber = numberInput();
 
-    //increase the patient count
     printf("Patient added successfuly\n2");
 
 }
 
 void displayPatient() {
+    //if the current ID is 1 it means that no patient is added print a meaningful message
+    if (currentid == 1) {
+        printf("No patient enrolled yet\n");
+        return;
+    }
+
+    //loops through the entire array to print out every patient if the patient id is a positive number
     for (int i = 0; i < MAX_PATIENT; i++) {
         if (patient[i].patientId > 0) {
             printf("Patient ID: %-10d Patient Name: %-20s Age: %-5d Diagnosis: %-20s Room Number: %-10d\n",
@@ -138,44 +161,78 @@ void displayPatient() {
 }
 
 void dischargePatient() {
+    //if the current ID is 1 it means that no patient is added print a meaningful message
+    if (currentid == 1) {
+        printf("No patient enrolled yet\n");
+        return;
+    }
+
+    //choice of the user input and the index to look for in the array.
     int choice, index;
+
+    //take user input
     printf("enter the patient id to discharge\n");
-    scanf("%d", &choice);
-    index = findposition(choice);
+    choice = numberInput();
+
+    //call the method to find the position in the hopital.
+    index = findPosition(choice);
+
+    //if index is negative number it means patient is not found print a message and return.
     if (index < 0) {
         printf("Patient ID is not found!\n");
         return;
     }
+
+    //once patient is found set the id to -1 so that the system won't print or interact with it
     patient[index].patientId = -1;
+
+    //push the position into the stack
     position.top++;
     position.position[position.top] = index;
     printf("Patient discharged successfully");
 }
 
 void searchPatient() {
+    //if the current ID is 1 it means that no patient is added print a meaningful message
+    if (currentid == 1) {
+        printf("No patient enrolled yet\n");
+        return;
+    }
+
+    //take user input via helper method
     int input, index;
     printf("Please enter patient ID:\n");
-    scanf("%d", input);
-    index = findposition(input);
+    input =  numberInput();
+
+    //find the position in the struct
+    index = findPosition(input);
+
+    // if patient is not fund print a message
     if (index < 0) {
         printf("Patient ID not found!\n");
         return;
     }
+
+    //print out the patient details
     printf("%-10d %-20s %-5d %-20s %-10d\n",
                patient[index].patientId, patient[index].name, patient[index].age,
                patient[index].diagnosis, patient[index].roomNumber);
 
 }
 
-int findposition(int input) {
+
+int findPosition(int input) {
+    //loop through the entire struct to find the patient position in the stuct.
     for (int i = 0; i < MAX_PATIENT; i++) {
         if (patient[i].patientId == input) {
             return i;
         }
     }
+    //return -1 if patient is not found in the system.
     return -1;
 }
 
+//initialize the stack with all the available spots in the sturct
 void initializeStack(Stack *stack) {
     stack->top = 49;
     int j = 0;
@@ -183,6 +240,38 @@ void initializeStack(Stack *stack) {
         stack->position[i] = j;
         j++;
     }
+}
+
+int numberInput() {
+    int flag = 1;
+    char input[50];
+    int num;
+
+    while (flag) {
+        fgets(input, sizeof(input), stdin); // Read input as a string
+
+        // Remove newline character if present
+        input[strcspn(input, "\n")] = '\0';
+
+        // Validate if input is a positive integer (only digits, no negatives or floating points)
+        int validNum = 1;
+        for (int i = 0; i < strlen(input); i++) {
+            if (!isdigit(input[i])) {
+                validNum = 0;
+                break;
+            }
+        }
+
+        if (validNum && strlen(input) > 0) {
+            num = atoi(input); // Convert valid input to integer
+            if (num > 0) {  // Ensure number is positive
+                return num;
+            }
+        }
+
+        printf("Invalid Entry! Try Again.\n");
+    }
+
 }
 
 /*
