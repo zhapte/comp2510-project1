@@ -123,16 +123,15 @@ void addPatient() {
 
     //take patient name and store in the struct
     printf("Please enter patient name:\n");
-    scanf("%s", &patient[current].name);
-    getchar();
+    fgets(patient[current].name, 50,stdin);
+
 
     printf("Please enter patient age:\n");
     patient[current].age = numberInput();
 
     //take the patient diagnosis
     printf("Please enter patient diagnosis:\n");
-    scanf("%s", &patient[current].diagnosis);
-    getchar();
+    fgets(patient[current].diagnosis, 50,stdin);
 
     //take the roomnumber for the patient
     printf("Please enter patient room number:\n");
