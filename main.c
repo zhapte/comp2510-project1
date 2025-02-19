@@ -241,6 +241,7 @@ void initializeStack(Stack *stack) {
     }
 }
 
+//helper method to take only positive number as input and reject all string and negative numbers or floating point
 int numberInput() {
     int flag = 1;
     char input[50];
