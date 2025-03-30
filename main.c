@@ -29,16 +29,9 @@ typedef struct {
     int capacity;
 } PatientList;
 
-typedef struct PatientNode {
-    Patient data;
-    struct PatientNode *next;
-} PatientNode;
-
 Patient *patients = NULL;
 int patientCount = 0;
 int patientCapacity = INITIAL_CAPACITY; // Start with 10 or so
-
-int currentId = 1;
 
 
 //create a patient list in the global level
@@ -61,7 +54,8 @@ int numberInput();
 void initializePatientList(PatientList *list);
 void loadPatientsFromFile(const char *filename);
 void savePatientsToFile(const char *filename);
-
+void loadDoctorScheduleFromFile(const char *filename);
+void saveDoctorScheduleToFile(const char *filename);
 
 
 //main to display
@@ -69,6 +63,8 @@ int main(void) {
 
     //initialize the patient list
     initializePatientList(&patientList);
+    //load doctor schedule from file
+    loadDoctorScheduleFromFile("schedule.txt");
     //load patients from file
     loadPatientsFromFile("patients.txt");
     //call the menu;
@@ -80,8 +76,6 @@ int main(void) {
 void menu() {
     //choice for the user to enter
     int choice;
-
-    PatientNode *head = NULL;
     do {
 
         //prompt th user to choices
@@ -116,7 +110,8 @@ void menu() {
             case 6:
                 printf("Saving and exiting...\n");
                 savePatientsToFile("patients.txt");
-                break;
+                saveDoctorScheduleToFile("schedule.txt");
+                return;
             default:
                 printf("invalid Choice try again!\n");
             break;
@@ -458,6 +453,65 @@ void loadPatientsFromFile(const char *filename) {
 
     fclose(file);
     printf("Patient data loaded from file.\n");
+}
+
+void saveDoctorScheduleToFile(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Error opening file for writing doctor schedule\n");
+        return;
+    }
+
+    char *days[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+                    "Saturday", "Sunday"};
+    char *shifts[] = {"Morning", "Afternoon", "Evening"};
+
+    for (int i = 0; i < DAYS; i++) {
+        for (int j = 0; j < SHIFTS; j++) {
+            fprintf(file, "%s|%s|%s\n",
+                days[i], shifts[j],doctorSchedule[i][j]);
+        }
+    }
+
+    fclose(file);
+    printf("Doctor schedule saved to file.\n");
+}
+
+void loadDoctorScheduleFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("No saved doctor schedule found.\n");
+        initializeSchedule();
+        return;
+    }
+
+    char line[150], day[20], shift[20], name[50];
+    char *days[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+                    "Saturday", "Sunday"};
+    char *shifts[] = {"Morning", "Afternoon", "Evening"};
+
+    while (fgets(line, sizeof(line), file)) {
+        sscanf(line, "%[^|]|%[^|]%[^\n]", day, shift, name);
+
+        int dayIndex = -1;
+        int shiftIndex = -1;
+        for (int i = 0; i < DAYS; i++) {
+            if (strcmp(day, days[i]) == 0) {
+                dayIndex = i;
+            }
+        }
+        for (int j = 0; j < SHIFTS; j++) {
+            if (strcmp(shift, shifts[j]) == 0) {
+                shiftIndex = j;
+            }
+        }
+        if (dayIndex != -1 && shiftIndex != -1) {
+            strncpy(doctorSchedule[dayIndex][shiftIndex], name, 50);
+        }
+    }
+    fclose(file);
+    printf("Doctor schedule loaded from file.\n");
+
 }
 
 
