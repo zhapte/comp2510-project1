@@ -54,6 +54,7 @@ void loadDoctorScheduleFromFile(const char *filename);
 void saveDoctorScheduleToFile(const char *filename);
 PatientNode* createPatientNode(int id);
 void freePatientList(PatientNode *head);
+
 int getLastId(PatientNode *head) {
     if (head == NULL) {
         return 1;  // Or another value indicating an empty list.
