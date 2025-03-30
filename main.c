@@ -185,8 +185,6 @@ void dischargePatient() {
     printf("Patient ID: %d Name: %s Age: %d Diagnosis: %s Room Number: %d is now discharged\n",
            p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
     patientList.records[index].patientId = 0;
-    //once patient is found set the id to -1 so that the system won't print or interact with it
-    //patient[index].patientId = -1;//add a function
 
 
 }
