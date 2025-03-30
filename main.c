@@ -50,6 +50,8 @@ void assignDoctor();
 void doctorScheduleMenu();
 void menu();
 int numberInput();
+void savePatientsToFile(const char *filename);
+void loadPatientsFromFile(const char *filename);
 
 //main to display
 int main(void) {
@@ -57,6 +59,8 @@ int main(void) {
     initializeStack(&position);
     //start the hopital with id of 1 ensure that id will be unique.
     currentid = 1;
+
+    loadPatientsFromFile("patients.txt");
     //call the menu;
     menu();
     return 0;
@@ -97,7 +101,8 @@ void menu() {
                 doctorScheduleMenu();
             break;
             case 6:
-                printf("Exiting.");
+                printf("Saving data and exiting...\n");
+                savePatientsToFile("patients.txt");
                 return;
             default:
                 printf("invalid Choice try again!\n");
@@ -373,6 +378,66 @@ void doctorScheduleMenu() {
                 printf("Invalid Choice try again!\n");
         }
     } while (choice != 3);
+}
+
+void savePatientsToFile(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Error openeing file");
+        return;
+    }
+
+    for (int i = 0; i < MAX_PATIENT; i++) {
+        if (patient[i].patientId > 0) {
+            fprintf(file, "%d|%s|%d|%s|%d\n",
+                patient[i].patientId,
+                strtok(patient[i].name, "\n"),
+                patient[i].age,
+                strtok(patient[i].diagnosis, "\n"),
+                patient[i].roomNumber);
+        }
+    }
+    fclose(file);
+    printf("Patient data saved to file\n");
+}
+
+void loadPatientsFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("No saved patient data found\n");
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        int index;
+        if (position.top < 0) {
+            printf("Max patient capacity reached while loading\n");
+            break;
+        }
+
+        index = position.position[position.top--];
+
+        char *token = strtok(line, "|");
+        patient[index].patientId = atoi(token);
+        if (patient[index].patientId >= currentid) {
+            currentid = patient[index].patientId + 1;
+        }
+
+        token = strtok(NULL, "|");
+        strcpy(patient[index].name, token);
+
+        token = strtok(NULL, "|");
+        patient[index].age = atoi(token);
+
+        token = strtok(NULL, "|");
+        strcpy(patient[index].diagnosis, token);
+
+        token = strtok(NULL, "|");
+        patient[index].roomNumber = atoi(token);
+    }
+    fclose(file);
+    printf("Patient data loaded from file\n");
 }
 
 

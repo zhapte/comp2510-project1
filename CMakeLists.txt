@@ -4,4 +4,5 @@ project(project C)
 set(CMAKE_C_STANDARD 23)
 
 add_executable(project main.c
-        Project.c)
+        Project.c
+        InClassExercise.c)
