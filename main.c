@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 //the max number of patient to be added to the record
 #define INITIAL_CAPACITY 10
@@ -52,6 +55,10 @@ void loadPatientsFromFile(const char *filename, PatientNode **head);
 void savePatientsToFile(const char *filename, PatientNode *head);
 void loadDoctorScheduleFromFile(const char *filename);
 void saveDoctorScheduleToFile(const char *filename);
+void backupData();
+void restorePatientsFromFile(const char *filename);
+void restoreScheduleFromFile(const char *filename);
+void listBackupFiles(const char *prefix);
 PatientNode* createPatientNode(int id);
 void freePatientList(PatientNode *head);
 
@@ -100,6 +107,9 @@ void menu() {
         printf("4. Search Patient\n");
         printf("5. Doctor Scheduling\n");
         printf("6. Exit\n");
+        printf("7. Backup Data\n");
+        printf("8. Restore Patient Data\n");
+        printf("9. Restore Doctor Schedule\n");
         scanf("%d", &choice);
         getchar();
 
@@ -128,6 +138,35 @@ void menu() {
                 saveDoctorScheduleToFile("schedule.txt");
                 freePatientList(head);
                 return;
+            case 7:
+                backupData();
+                break;
+            case 8: {
+                char filename[100];
+                listBackupFiles("patients_");
+                printf("Enter the exact filename to restore (e.g., patients_20250330_1430.txt): ");
+                scanf("%s", filename);
+                getchar();
+
+                char fullPath[150];
+                snprintf(fullPath, sizeof(fullPath), "backup/%s", filename);
+                restorePatientsFromFile(fullPath);
+
+            }
+            break;
+            case 9: {
+                char filename[100];
+                listBackupFiles("schedule_");
+                printf("Enter the exact filename to restore (e.g., schedule_20250330_1430.txt): ");
+                scanf("%s", filename);
+                getchar();
+
+                char fullPath[150];
+                snprintf(fullPath, sizeof(fullPath), "backup/%s", filename);
+                restoreScheduleFromFile(fullPath);
+
+            }
+            break;
             default:
                 printf("invalid Choice try again!\n");
             break;
@@ -510,7 +549,8 @@ void loadDoctorScheduleFromFile(const char *filename) {
     char *shifts[] = {"Morning", "Afternoon", "Evening"};
 
     while (fgets(line, sizeof(line), file)) {
-        sscanf(line, "%[^|]|%[^|]%[^\n]", day, shift, name);
+        sscanf(line, "%[^|]|%[^|]|%[^\n]", day, shift, name);
+
 
         int dayIndex = -1;
         int shiftIndex = -1;
@@ -531,6 +571,65 @@ void loadDoctorScheduleFromFile(const char *filename) {
     fclose(file);
     printf("Doctor schedule loaded from file.\n");
 
+}
+
+void getCurrentTimeStamp(char *buffer, int size) {
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(buffer, size, "%Y%m%d_%H%M", t);
+}
+
+void backupData() {
+    char timestamp[20];
+    getCurrentTimeStamp(timestamp, sizeof(timestamp));
+
+    struct stat st = {0};
+    if (stat("backup", &st) == -1) {
+        mkdir("backup");
+    }
+
+    char patientBackupFile[100];
+    char scheduleBackupFile[100];
+    snprintf(patientBackupFile, sizeof(patientBackupFile), "backup/patients_%s.txt", timestamp);
+    snprintf(scheduleBackupFile, sizeof(scheduleBackupFile), "backup/schedule_%s.txt", timestamp);
+
+    savePatientsToFile(patientBackupFile, head);
+    saveDoctorScheduleToFile(scheduleBackupFile);
+
+    printf("Backup completed: %s and %s\n", patientBackupFile, scheduleBackupFile);
+}
+
+void restorePatientsFromFile(const char *filename) {
+    loadPatientsFromFile(filename, &head);
+}
+
+void restoreScheduleFromFile(const char *filename) {
+    initializeSchedule();
+    loadDoctorScheduleFromFile(filename);
+}
+
+void listBackupFiles(const char *prefix) {
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = opendir("backup");
+    if (dir == NULL) {
+        printf("Error opening backup directory.\n");
+        return;
+    }
+
+    printf("\nAvailable %s backups: \n");
+    int count = 0;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strstr(entry->d_name, prefix) == entry->d_name) {
+            printf("%s\n", entry->d_name);
+            count++;
+        }
+    }
+    closedir(dir);
+    if (count == 0) {
+        printf("No backups found.\n");
+    }
 }
 
 

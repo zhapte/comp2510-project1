@@ -3,3 +3,4 @@
 3|Tom |35|colon cancer|125
 4|Johnny Bottoms|21|Heart Disease|543
 5|Jared|65|Diabetes|126
+6|Clint|37|Psychosis|111
