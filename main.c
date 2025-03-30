@@ -29,9 +29,16 @@ typedef struct {
     int capacity;
 } PatientList;
 
+typedef struct PatientNode {
+    Patient data;
+    struct PatientNode *next;
+} PatientNode;
+
 Patient *patients = NULL;
 int patientCount = 0;
 int patientCapacity = INITIAL_CAPACITY; // Start with 10 or so
+
+int currentId = 1;
 
 
 //create a patient list in the global level
@@ -56,6 +63,7 @@ void loadPatientsFromFile(const char *filename);
 void savePatientsToFile(const char *filename);
 
 
+
 //main to display
 int main(void) {
 
@@ -72,6 +80,8 @@ int main(void) {
 void menu() {
     //choice for the user to enter
     int choice;
+
+    PatientNode *head = NULL;
     do {
 
         //prompt th user to choices
@@ -106,7 +116,7 @@ void menu() {
             case 6:
                 printf("Saving and exiting...\n");
                 savePatientsToFile("patients.txt");
-                return;
+                break;
             default:
                 printf("invalid Choice try again!\n");
             break;
