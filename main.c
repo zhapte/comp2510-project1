@@ -25,28 +25,25 @@ typedef struct{
     int     roomNumber;
 }Patient;
 
-//keep a list of records and keep track of the count and capcity to dynamically increase and decrese the size
-typedef struct {
-    Patient *records;
-    int count;
-    int capacity;
-} PatientList;
 
-Patient *patients = NULL;
-int patientCount = 0;
-int patientCapacity = INITIAL_CAPACITY; // Start with 10 or so
+typedef struct PatientNode {
+    Patient data;
+    struct PatientNode *next;
+} PatientNode;
 
 
-//create a patient list in the global level
-PatientList patientList;
+int currentId = 1;
+PatientNode *head = NULL;
+
+
 
 
 
 //function prototype.
-void addPatient();
-void displayPatient();
-void dischargePatient();
-void searchPatient();
+void addPatient(PatientNode **head, int id);
+void displayPatient(PatientNode *head);
+void dischargePatient(PatientNode **head);
+void searchPatient(PatientNode *head);
 int findPosition(int input);
 void initializeSchedule();
 void displaySchedule();
@@ -54,26 +51,27 @@ void assignDoctor();
 void doctorScheduleMenu();
 void menu();
 int numberInput();
-void initializePatientList(PatientList *list);
-void loadPatientsFromFile(const char *filename);
-void savePatientsToFile(const char *filename);
+void loadPatientsFromFile(const char *filename, PatientNode **head);
+void savePatientsToFile(const char *filename, PatientNode *head);
 void loadDoctorScheduleFromFile(const char *filename);
 void saveDoctorScheduleToFile(const char *filename);
 void backupData();
 void restorePatientsFromFile(const char *filename);
 void restoreScheduleFromFile(const char *filename);
 void listBackupFiles(const char *prefix);
+PatientNode* createPatientNode(int id);
+void freePatientList(PatientNode *head);
+
 
 
 //main to display
 int main(void) {
 
     //initialize the patient list
-    initializePatientList(&patientList);
     //load doctor schedule from file
     loadDoctorScheduleFromFile("schedule.txt");
     //load patients from file
-    loadPatientsFromFile("patients.txt");
+    loadPatientsFromFile("patients.txt", &head);
     //call the menu;
     menu();
     return 0;
@@ -102,16 +100,17 @@ void menu() {
         // switch case to cycle through the choices
         switch (choice) {
             case 1:
-                addPatient();
-            break;
+                addPatient(&head, currentId);
+                currentId++;
+                break;
             case 2:
-                displayPatient() ;
+                displayPatient(head) ;
             break;
             case 3:
-                dischargePatient();
+                dischargePatient(&head);
             break;
             case 4:
-                searchPatient();
+                searchPatient(head);
             break;
             case 5:
                 initializeSchedule();
@@ -119,8 +118,9 @@ void menu() {
                 break;
             case 6:
                 printf("Saving and exiting...\n");
-                savePatientsToFile("patients.txt");
+                savePatientsToFile("patients.txt", head);
                 saveDoctorScheduleToFile("schedule.txt");
+                freePatientList(head);
                 return;
             case 7:
                 backupData();
@@ -156,140 +156,131 @@ void menu() {
             break;
         }
     }while(choice != 6);
-    free(patientList.records);
+}
 
+PatientNode* createPatientNode(int id) {
+    PatientNode *newNode = malloc(sizeof(PatientNode));
+    if (newNode == NULL) {
+        perror("Failed to allocate memory for new patient node");
+        exit(EXIT_FAILURE);
+    }
+    newNode->data.patientId = id;
+    newNode->next = NULL;
+    return newNode;
 }
 
 // function to add a patient to the record
-void addPatient() {
-    if (patientList.count == patientList.capacity) {
-        int newCapacity = patientList.capacity * 2;
-        Patient *temp = realloc(patientList.records, newCapacity * sizeof(Patient));
-        if (temp == NULL) {
-            perror("Failed to reallocate memory");
-            exit(EXIT_FAILURE);
-        }
-        patientList.records = temp;
-        patientList.capacity = newCapacity;
-    }
+void addPatient(PatientNode **head, int id) {
+    PatientNode *newNode = createPatientNode(id);
 
-    Patient *newPatient = &patientList.records[patientList.count];
-    newPatient->patientId = patientList.count + 1;
+    printf("Adding Patient ID: %d\n", newNode->data.patientId);
 
-    printf("Adding Patient ID: %d\n", newPatient->patientId);
-
+    // Get patient details
     printf("Enter patient name: ");
-    fgets(newPatient->name, 50, stdin);
-    newPatient->name[strcspn(newPatient->name, "\n")] = '\0';
+    fgets(newNode->data.name, 50, stdin);
+    newNode->data.name[strcspn(newNode->data.name, "\n")] = '\0';
 
     printf("Enter patient age: ");
-    newPatient->age = numberInput();
+    newNode->data.age = numberInput();
+
 
     printf("Enter patient diagnosis: ");
-    fgets(newPatient->diagnosis, 100, stdin);
-    newPatient->diagnosis[strcspn(newPatient->diagnosis, "\n")] = '\0';
+    fgets(newNode->data.diagnosis, 100, stdin);
+    newNode->data.diagnosis[strcspn(newNode->data.diagnosis, "\n")] = '\0';
 
     printf("Enter patient room number: ");
-    newPatient->roomNumber = numberInput();
+    newNode->data.roomNumber = numberInput();
 
-    patientList.count++;
+    // Insert the new node at the end of the list
+    if (*head == NULL) {
+        *head = newNode;
+    } else {
+        PatientNode *current = *head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = newNode;
+    }
     printf("Patient added successfully.\n");
 }
 
-void displayPatient() {
-    if (patientList.count == 0) {
+void displayPatient(PatientNode *head) {
+    if (head == NULL) {
         printf("No patients enrolled yet.\n");
         return;
     }
 
-    for (int i = 0; i < patientList.count; i++) {
-        Patient p = patientList.records[i];
-        if (p.patientId != 0) {
-            printf("Patient ID: %-10d\tName: %-20s\tAge: %-5d\tDiagnosis: %-20s\tRoom Number: %-10d\n",
+    PatientNode *current = head;
+    while (current != NULL){
+        Patient p = current->data;
+        printf("Patient ID: %-10d\tName: %-20s\tAge: %-5d\tDiagnosis: %-20s\tRoom Number: %-10d\n",
                         p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
-        }
+        current = current->next;
     }
 }
 
-void dischargePatient() {
-    //if the current ID is 1 it means that no patient is added print a meaningful message
-    if (patientList.count == 0) {
+void dischargePatient(PatientNode **head) {
+    if (head == NULL) {
         printf("No patients enrolled yet.\n");
         return;
     }
 
-    //choice of the user input and the index to look for in the array.
-    int choice, index;
+    PatientNode *current = *head;
+    PatientNode *prev = NULL;
 
-    //take user input
-    printf("enter the patient id to discharge\n");
-    choice = numberInput();
+    printf("Please enter the id of the patient");
+    int id = numberInput();
 
-    //call the method to find the position in the hopital.
-    index = findPosition(choice);
-
-    //if index is negative number it means patient is not found print a message and return.
-    if (index < 0) {
-        printf("Patient ID is not found!\n");
-        return;
+    while (current != NULL) {
+        if (current->data.patientId == id) {
+            // Patient found; adjust pointers to remove the node
+            if (prev == NULL) {
+                // Removing the head node
+                *head = current->next;
+            } else {
+                prev->next = current->next;
+            }
+            free(current);
+            printf("Patient with ID %d has been discharged successfully.\n", id);
+            return;
+        }
+        prev = current;
+        current = current->next;
     }
 
-    Patient p = patientList.records[index];
-    printf("Patient ID: %d Name: %s Age: %d Diagnosis: %s Room Number: %d is now discharged\n",
-           p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
-    patientList.records[index].patientId = 0;
-
-
+    // If we reach here, the patient was not found
+    printf("Patient with ID %d not found.\n", id);
 }
 
-void searchPatient() {
-    //if the current ID is 1 it means that no patient is added print a meaningful message
-    if (patientList.count == 0) {
+void searchPatient(PatientNode *head) {
+    if (head == NULL) {
         printf("No patients enrolled yet.\n");
         return;
     }
+    PatientNode *current = head;
+    printf("Please enter the id of the patient");
+    int id = numberInput();
 
-    //take user input via helper method
-    int input, index;
-    printf("Please enter patient ID:\n");
-    input =  numberInput();
-
-    //find the position in the struct
-    index = findPosition(input);
-
-    // if patient is not fund print a message
-    if (index < 0) {
-        printf("Patient ID not found!\n");
-        return;
-    }
-
-    Patient p = patientList.records[index];
-    printf("Patient ID: %-10d\tName: %-20s\tAge: %-5d\tDiagnosis: %-20s\tRoom Number: %-10d\n",
-           p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
-
-}
-
-
-int findPosition(int input) {
-    //loop through the entire struct to find the patient position in the stuct.
-    for (int i = 0; i < patientList.count; i++) {
-        if (patientList.records[i].patientId == input) {
-            return i;
+    while (current != NULL) {
+        if (current->data.patientId == id) {
+            Patient p = current->data;
+            printf("Patient ID: %-10d\tName: %-20s\tAge: %-5d\tDiagnosis: %-20s\tRoom Number: %-10d\n",
+                            p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
+            return;
         }
+        current = current->next;
     }
-    //return -1 if patient is not found in the system.
-    return -1;
+    printf("Patient with ID %d not found.\n", id);
+
 }
 
-void initializePatientList(PatientList *list)
-{
-    list->records = malloc(INITIAL_CAPACITY * sizeof(Patient));
-    if (list->records == NULL) {
-        perror("Failed to allocate memory for patient records");
-        exit(EXIT_FAILURE);
+void freePatientList(PatientNode *head) {
+    PatientNode *current = head;
+    while (current != NULL) {
+        PatientNode *temp = current;
+        current = current->next;
+        free(temp);
     }
-    list->count = 0;
-    list->capacity = INITIAL_CAPACITY;
 }
 
 //helper method to take only positive number as input and reject all string and negative numbers or floating point
@@ -426,31 +417,29 @@ void doctorScheduleMenu() {
     } while (choice != 3);
 }
 
-void savePatientsToFile(const char *filename) {
+void savePatientsToFile(const char *filename, PatientNode *head) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         printf("Error opening file for writing patient data.\n");
         return;
     }
-
-    for (int i = 0; i < patientList.count; i++) {
-        Patient p = patientList.records[i];
-        if (p.patientId != 0) {
-            fprintf(file, "%d|%s|%d|%s|%d\n",
-                    p.patientId,
-                    p.name,
-                    p.age,
-                    p.diagnosis,
-                    p.roomNumber);
-        }
+    PatientNode *current = head;
+    while (current != NULL) {
+        Patient p = current->data;
+        fprintf(file, "%d|%s|%d|%s|%d\n",
+                p.patientId,
+                p.name,
+                p.age,
+                p.diagnosis,
+                p.roomNumber);
+        current = current->next;
     }
-
     fclose(file);
     printf("Patient data saved to file.\n");
 }
 
 
-void loadPatientsFromFile(const char *filename) {
+void loadPatientsFromFile(const char *filename, PatientNode **head) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         printf("No saved patient data found.\n");
@@ -459,35 +448,49 @@ void loadPatientsFromFile(const char *filename) {
 
     char line[256];
     while (fgets(line, sizeof(line), file)) {
-        if (patientList.count >= patientList.capacity) {
-            patientList.capacity *= 2;
-            Patient *temp = realloc(patientList.records, patientList.capacity * sizeof(Patient));
-            if (temp == NULL) {
-                printf("Memory allocation failed while loading patients.\n");
-                fclose(file);
-                return;
-            }
-            patientList.records = temp;
+        // Remove trailing newline if present.
+        line[strcspn(line, "\n")] = '\0';
+
+        // Allocate a new node.
+        PatientNode *newNode = malloc(sizeof(PatientNode));
+        if (newNode == NULL) {
+            perror("Failed to allocate memory for new patient node");
+            fclose(file);
+            return;
         }
+        newNode->next = NULL;
 
-        Patient *p = &patientList.records[patientList.count];
-
+        // Parse the line using strtok.
         char *token = strtok(line, "|");
-        p->patientId = atoi(token);
+        if (token != NULL)
+            newNode->data.patientId = atoi(token);
 
         token = strtok(NULL, "|");
-        strcpy(p->name, token);
+        if (token != NULL)
+            strcpy(newNode->data.name, token);
 
         token = strtok(NULL, "|");
-        p->age = atoi(token);
+        if (token != NULL)
+            newNode->data.age = atoi(token);
 
         token = strtok(NULL, "|");
-        strcpy(p->diagnosis, token);
+        if (token != NULL)
+            strcpy(newNode->data.diagnosis, token);
 
         token = strtok(NULL, "|");
-        p->roomNumber = atoi(token);
+        if (token != NULL)
+            newNode->data.roomNumber = atoi(token);
 
-        patientList.count++;
+        // Insert the new node at the end of the linked list.
+        if (*head == NULL) {
+            *head = newNode;
+        } else {
+            PatientNode *current = *head;
+            while (current->next != NULL) {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
     }
 
     fclose(file);
@@ -574,15 +577,14 @@ void backupData() {
     snprintf(patientBackupFile, sizeof(patientBackupFile), "backup/patients_%s.txt", timestamp);
     snprintf(scheduleBackupFile, sizeof(scheduleBackupFile), "backup/schedule_%s.txt", timestamp);
 
-    savePatientsToFile(patientBackupFile);
+    savePatientsToFile(patientBackupFile, head);
     saveDoctorScheduleToFile(scheduleBackupFile);
 
     printf("Backup completed: %s and %s\n", patientBackupFile, scheduleBackupFile);
 }
 
 void restorePatientsFromFile(const char *filename) {
-    patientList.count = 0;
-    loadPatientsFromFile(filename);
+    loadPatientsFromFile(filename, &head);
 }
 
 void restoreScheduleFromFile(const char *filename) {
