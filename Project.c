@@ -7,16 +7,16 @@
 #include <string.h>
 
 //the max number of patient to be added to the record
-#define MAX_PATIENT 50
+#define INITIAL_CAPACITY 50
 
-int     patientId[MAX_PATIENT];
-char    name[MAX_PATIENT][50];
-int     age[MAX_PATIENT];
-char    diagnosis[MAX_PATIENT][100];
-int     roomNumber[MAX_PATIENT];
+int     patientId[INITIAL_CAPACITY];
+char    name[INITIAL_CAPACITY][50];
+int     age[INITIAL_CAPACITY];
+char    diagnosis[INITIAL_CAPACITY][100];
+int     roomNumber[INITIAL_CAPACITY];
 
 //array to keep track of number of position available in the hospital
-int     avail[MAX_PATIENT];
+int     avail[INITIAL_CAPACITY];
 int     availNum = 0;
 
 //keep track of the number of the patient
@@ -73,19 +73,19 @@ int main() {
 }
 
 void addPatient() {
-    if (availNum >= MAX_PATIENT - 1) {
+    if (availNum >= INITIAL_CAPACITY - 1) {
         printf("Hospital Full\n");
         return;
     }
     printf("Please enter patient ID:\n");
-    scanf("%d", &patient[current].patientId);
+    scanf("%d", );
     getchar();
 }
 
 
 //function to pupulate the array of available spots in the hospital
 void initializedHospital() {
-    for (int i = 0; i < MAX_PATIENT; i++) {
+    for (int i = 0; i < INITIAL_CAPACITY; i++) {
         avail[i] = i;
     }
 }

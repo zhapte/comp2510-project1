@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "C:/Users/kaid7/CLionProjects/comp2510-project1/InClassExercise.c" "CMakeFiles/project.dir/InClassExercise.c.obj" "gcc" "CMakeFiles/project.dir/InClassExercise.c.obj.d"
   "C:/Users/kaid7/CLionProjects/comp2510-project1/Project.c" "CMakeFiles/project.dir/Project.c.obj" "gcc" "CMakeFiles/project.dir/Project.c.obj.d"
   "C:/Users/kaid7/CLionProjects/comp2510-project1/main.c" "CMakeFiles/project.dir/main.c.obj" "gcc" "CMakeFiles/project.dir/main.c.obj.d"
   )

@@ -1,1 +1,2 @@
-1|John Smith|25|flu|234
+1|james smith|27|flu|123
+2|test|20|common cold|1

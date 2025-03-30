@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/project.dir/InClassExercise.c.obj"
+  "CMakeFiles/project.dir/InClassExercise.c.obj.d"
   "CMakeFiles/project.dir/Project.c.obj"
   "CMakeFiles/project.dir/Project.c.obj.d"
   "CMakeFiles/project.dir/main.c.obj"
