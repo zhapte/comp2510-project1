@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 //the max number of patient to be added to the record
-#define MAX_PATIENT 50
+#define INITIAL_CAPACITY 10
 
 // the number of days in a week: used for the doctors schedule
 #define DAYS 7
@@ -22,20 +22,17 @@ typedef struct{
     int     roomNumber;
 }Patient;
 
-//simple stack structure to keep track of the patients
 typedef struct {
-    int position[MAX_PATIENT];
-    int top;
-}Stack;
+    Patient *records;
+    int count;
+    int capacity;
+} PatientList;
 
-//create the patient record in the global scope
-Patient patient[MAX_PATIENT];
 
-//create the stack for patient position at the global level
-Stack position;
+//create a patient list in the global level
+PatientList patientList;
 
-//id to keep track of the patient
-int currentid;
+
 
 //function prototype.
 void addPatient();
@@ -43,24 +40,25 @@ void displayPatient();
 void dischargePatient();
 void searchPatient();
 int findPosition(int input);
-void initializeStack(Stack *stack);
 void initializeSchedule();
 void displaySchedule();
 void assignDoctor();
 void doctorScheduleMenu();
 void menu();
 int numberInput();
+void initializePatientList(PatientList *list);
+
 
 //main to display
 int main(void) {
-    //initialize the stack for the position of the hosipital
-    initializeStack(&position);
-    //start the hopital with id of 1 ensure that id will be unique.
-    currentid = 1;
+
+    //initialize the patient list
+    initializePatientList(&patientList);
     //call the menu;
     menu();
     return 0;
 }
+
 
 void menu() {
     //choice for the user to enter
@@ -95,7 +93,7 @@ void menu() {
             case 5:
                 initializeSchedule();
                 doctorScheduleMenu();
-            break;
+                break;
             case 6:
                 printf("Exiting.");
                 return;
@@ -104,65 +102,65 @@ void menu() {
             break;
         }
     }while(choice != 6);
+    free(patientList.records);
+
 }
 
 // function to add a patient to the record
 void addPatient() {
-    if (position.top < 0) {
-        printf("Hospital is full is full!\n");
-        return;
+    if (patientList.count == patientList.capacity) {
+        int newCapacity = patientList.capacity * 2;
+        Patient *temp = realloc(patientList.records, newCapacity * sizeof(Patient));
+        if (temp == NULL) {
+            perror("Failed to reallocate memory");
+            exit(EXIT_FAILURE);
+        }
+        patientList.records = temp;
+        patientList.capacity = newCapacity;
     }
-    //pop out the top most position to put the patient in to the struct
-    int current = position.position[position.top];
-    position.top--;
 
-    //auto increment patient id is assigned.
-    printf("The Patient id is %d\n", currentid);
-    patient[current].patientId = currentid;
-    currentid++;
+    Patient *newPatient = &patientList.records[patientList.count];
+    newPatient->patientId = patientList.count + 1;
 
-    //take patient name and store in the struct
-    printf("Please enter patient name:\n");
-    fgets(patient[current].name, 50,stdin);
+    printf("Adding Patient ID: %d\n", newPatient->patientId);
 
+    printf("Enter patient name: ");
+    fgets(newPatient->name, 50, stdin);
+    newPatient->name[strcspn(newPatient->name, "\n")] = '\0';
 
-    printf("Please enter patient age:\n");
-    patient[current].age = numberInput();
+    printf("Enter patient age: ");
+    newPatient->age = numberInput();
 
-    //take the patient diagnosis
-    printf("Please enter patient diagnosis:\n");
-    fgets(patient[current].diagnosis, 50,stdin);
+    printf("Enter patient diagnosis: ");
+    fgets(newPatient->diagnosis, 100, stdin);
+    newPatient->diagnosis[strcspn(newPatient->diagnosis, "\n")] = '\0';
 
-    //take the roomnumber for the patient
-    printf("Please enter patient room number:\n");
-    patient[current].roomNumber = numberInput();
+    printf("Enter patient room number: ");
+    newPatient->roomNumber = numberInput();
 
-    printf("Patient added successfuly\n2");
-
+    patientList.count++;
+    printf("Patient added successfully.\n");
 }
 
 void displayPatient() {
-    //if the current ID is 1 it means that no patient is added print a meaningful message
-    if (currentid == 1) {
-        printf("No patient enrolled yet\n");
+    if (patientList.count == 0) {
+        printf("No patients enrolled yet.\n");
         return;
     }
 
-    //loops through the entire array to print out every patient if the patient id is a positive number
-    for (int i = 0; i < MAX_PATIENT; i++) {
-        if (patient[i].patientId > 0) {
-            printf("Patient ID: %-10d Patient Name: %-20s Age: %-5d Diagnosis: %-20s Room Number: %-10d\n",
-               patient[i].patientId, patient[i].name, patient[i].age,
-               patient[i].diagnosis, patient[i].roomNumber);
+    for (int i = 0; i < patientList.count; i++) {
+        Patient p = patientList.records[i];
+        if (p.patientId != 0) {
+            printf("Patient ID: %-10d\tName: %-20s\tAge: %-5d\tDiagnosis: %-20s\tRoom Number: %-10d\n",
+                        p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
         }
-
     }
 }
 
 void dischargePatient() {
     //if the current ID is 1 it means that no patient is added print a meaningful message
-    if (currentid == 1) {
-        printf("No patient enrolled yet\n");
+    if (patientList.count == 0) {
+        printf("No patients enrolled yet.\n");
         return;
     }
 
@@ -182,19 +180,20 @@ void dischargePatient() {
         return;
     }
 
+    Patient p = patientList.records[index];
+    printf("Patient ID: %d Name: %s Age: %d Diagnosis: %s Room Number: %d is now discharged\n",
+           p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
+    patientList.records[index].patientId = 0;
     //once patient is found set the id to -1 so that the system won't print or interact with it
-    patient[index].patientId = -1;
+    //patient[index].patientId = -1;//add a function
 
-    //push the position into the stack
-    position.top++;
-    position.position[position.top] = index;
-    printf("Patient discharged successfully");
+
 }
 
 void searchPatient() {
     //if the current ID is 1 it means that no patient is added print a meaningful message
-    if (currentid == 1) {
-        printf("No patient enrolled yet\n");
+    if (patientList.count == 0) {
+        printf("No patients enrolled yet.\n");
         return;
     }
 
@@ -212,18 +211,17 @@ void searchPatient() {
         return;
     }
 
-    //print out the patient details
-    printf("%-10d %-20s %-5d %-20s %-10d\n",
-               patient[index].patientId, patient[index].name, patient[index].age,
-               patient[index].diagnosis, patient[index].roomNumber);
+    Patient p = patientList.records[index];
+    printf("Patient ID: %-10d\tName: %-20s\tAge: %-5d\tDiagnosis: %-20s\tRoom Number: %-10d\n",
+           p.patientId, p.name, p.age, p.diagnosis, p.roomNumber);
 
 }
 
 
 int findPosition(int input) {
     //loop through the entire struct to find the patient position in the stuct.
-    for (int i = 0; i < MAX_PATIENT; i++) {
-        if (patient[i].patientId == input) {
+    for (int i = 0; i < patientList.count; i++) {
+        if (patientList.records[i].patientId == input) {
             return i;
         }
     }
@@ -231,14 +229,15 @@ int findPosition(int input) {
     return -1;
 }
 
-//initialize the stack with all the available spots in the sturct
-void initializeStack(Stack *stack) {
-    stack->top = 49;
-    int j = 0;
-    for (int i = 49; i >= 0; i--) {
-        stack->position[i] = j;
-        j++;
+void initializePatientList(PatientList *list)
+{
+    list->records = malloc(INITIAL_CAPACITY * sizeof(Patient));
+    if (list->records == NULL) {
+        perror("Failed to allocate memory for patient records");
+        exit(EXIT_FAILURE);
     }
+    list->count = 0;
+    list->capacity = INITIAL_CAPACITY;
 }
 
 //helper method to take only positive number as input and reject all string and negative numbers or floating point
