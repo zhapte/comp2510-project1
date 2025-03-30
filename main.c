@@ -22,6 +22,7 @@ typedef struct{
     int     roomNumber;
 }Patient;
 
+//keep a list of records and keep track of the count and capcity to dynamically increase and decrese the size
 typedef struct {
     Patient *records;
     int count;
