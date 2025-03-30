@@ -54,6 +54,8 @@ int numberInput();
 void initializePatientList(PatientList *list);
 void loadPatientsFromFile(const char *filename);
 void savePatientsToFile(const char *filename);
+void loadDoctorScheduleFromFile(const char *filename);
+void saveDoctorScheduleToFile(const char *filename);
 
 
 //main to display
@@ -61,6 +63,8 @@ int main(void) {
 
     //initialize the patient list
     initializePatientList(&patientList);
+    //load doctor schedule from file
+    loadDoctorScheduleFromFile("schedule.txt");
     //load patients from file
     loadPatientsFromFile("patients.txt");
     //call the menu;
@@ -106,6 +110,7 @@ void menu() {
             case 6:
                 printf("Saving and exiting...\n");
                 savePatientsToFile("patients.txt");
+                saveDoctorScheduleToFile("schedule.txt");
                 return;
             default:
                 printf("invalid Choice try again!\n");
@@ -480,6 +485,32 @@ void loadDoctorScheduleFromFile(const char *filename) {
         return;
     }
 
+    char line[150], day[20], shift[20], name[50];
+    char *days[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+                    "Saturday", "Sunday"};
+    char *shifts[] = {"Morning", "Afternoon", "Evening"};
+
+    while (fgets(line, sizeof(line), file)) {
+        sscanf(line, "%[^|]|%[^|]%[^\n]", day, shift, name);
+
+        int dayIndex = -1;
+        int shiftIndex = -1;
+        for (int i = 0; i < DAYS; i++) {
+            if (strcmp(day, days[i]) == 0) {
+                dayIndex = i;
+            }
+        }
+        for (int j = 0; j < SHIFTS; j++) {
+            if (strcmp(shift, shifts[j]) == 0) {
+                shiftIndex = j;
+            }
+        }
+        if (dayIndex != -1 && shiftIndex != -1) {
+            strncpy(doctorSchedule[dayIndex][shiftIndex], name, 50);
+        }
+    }
+    fclose(file);
+    printf("Doctor schedule loaded from file.\n");
 
 }
 
