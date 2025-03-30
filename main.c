@@ -4,12 +4,15 @@
 #include <ctype.h>
 
 //the max number of patient to be added to the record
-#define MAX_PATIENT 50
+#define INITIAL_CAPACITY 10
 
 // the number of days in a week: used for the doctors schedule
 #define DAYS 7
 // the number of shifts in a day: morning, afternoon, evening
 #define SHIFTS 3
+
+
+
 
 char doctorSchedule[DAYS][SHIFTS][50];
 
@@ -37,6 +40,10 @@ Stack position;
 //id to keep track of the patient
 int currentid;
 
+Patient *patients = NULL;
+int patientCount = 0;
+int patientCapacity = INITIAL_CAPACITY; // Start with 10 or so
+
 //function prototype.
 void addPatient();
 void displayPatient();
@@ -50,8 +57,8 @@ void assignDoctor();
 void doctorScheduleMenu();
 void menu();
 int numberInput();
-void savePatientsToFile(const char *filename);
 void loadPatientsFromFile(const char *filename);
+void savePatientsToFile(const char *filename);
 
 //main to display
 int main(void) {
@@ -59,7 +66,7 @@ int main(void) {
     initializeStack(&position);
     //start the hopital with id of 1 ensure that id will be unique.
     currentid = 1;
-
+    //loads patients that were saved to file
     loadPatientsFromFile("patients.txt");
     //call the menu;
     menu();
@@ -379,65 +386,70 @@ void doctorScheduleMenu() {
         }
     } while (choice != 3);
 }
-
 void savePatientsToFile(const char *filename) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
-        printf("Error openeing file");
+        printf("Error opening file for writing patient data.\n");
         return;
     }
 
-    for (int i = 0; i < MAX_PATIENT; i++) {
-        if (patient[i].patientId > 0) {
-            fprintf(file, "%d|%s|%d|%s|%d\n",
-                patient[i].patientId,
-                strtok(patient[i].name, "\n"),
-                patient[i].age,
-                strtok(patient[i].diagnosis, "\n"),
-                patient[i].roomNumber);
-        }
+    for (int i = 0; i < patientCount; i++) {
+        fprintf(file, "%d|%s|%d|%s|%d\n",
+                patients[i].patientId,
+                strtok(patients[i].name, "\n"),
+                patients[i].age,
+                strtok(patients[i].diagnosis, "\n"),
+                patients[i].roomNumber);
     }
+
     fclose(file);
-    printf("Patient data saved to file\n");
+    printf("Patient data saved to file.\n");
 }
+
 
 void loadPatientsFromFile(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        printf("No saved patient data found\n");
+        printf("No saved patient data found.\n");
         return;
     }
 
     char line[256];
     while (fgets(line, sizeof(line), file)) {
-        int index;
-        if (position.top < 0) {
-            printf("Max patient capacity reached while loading\n");
-            break;
+        if (patientCount >= patientCapacity) {
+            patientCapacity *= 2;
+            patients = realloc(patients, patientCapacity * sizeof(Patient));
+            if (patients == NULL) {
+                printf("Memory allocation failed while loading patients.\n");
+                fclose(file);
+                return;
+            }
         }
-
-        index = position.position[position.top--];
 
         char *token = strtok(line, "|");
-        patient[index].patientId = atoi(token);
-        if (patient[index].patientId >= currentid) {
-            currentid = patient[index].patientId + 1;
-        }
+        patients[patientCount].patientId = atoi(token);
+        if (patients[patientCount].patientId >= currentid)
+            currentid = patients[patientCount].patientId + 1;
 
         token = strtok(NULL, "|");
-        strcpy(patient[index].name, token);
+        strcpy(patients[patientCount].name, token);
 
         token = strtok(NULL, "|");
-        patient[index].age = atoi(token);
+        patients[patientCount].age = atoi(token);
 
         token = strtok(NULL, "|");
-        strcpy(patient[index].diagnosis, token);
+        strcpy(patients[patientCount].diagnosis, token);
 
         token = strtok(NULL, "|");
-        patient[index].roomNumber = atoi(token);
+        patients[patientCount].roomNumber = atoi(token);
+
+        patientCount++;
     }
+
     fclose(file);
-    printf("Patient data loaded from file\n");
+    printf("Patient data loaded from file.\n");
 }
+
+
 
 
