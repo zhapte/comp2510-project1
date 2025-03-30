@@ -450,6 +450,39 @@ void loadPatientsFromFile(const char *filename) {
     printf("Patient data loaded from file.\n");
 }
 
+void saveDoctorScheduleToFile(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Error opening file for writing doctor schedule\n");
+        return;
+    }
+
+    char *days[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+                    "Saturday", "Sunday"};
+    char *shifts[] = {"Morning", "Afternoon", "Evening"};
+
+    for (int i = 0; i < DAYS; i++) {
+        for (int j = 0; j < SHIFTS; j++) {
+            fprintf(file, "%s|%s|%s\n",
+                days[i], shifts[j],doctorSchedule[i][j]);
+        }
+    }
+
+    fclose(file);
+    printf("Doctor schedule saved to file.\n");
+}
+
+void loadDoctorScheduleFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("No saved doctor schedule found.\n");
+        initializeSchedule();
+        return;
+    }
+
+
+}
+
 
 
 
