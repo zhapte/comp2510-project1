@@ -29,6 +29,10 @@ typedef struct {
     int capacity;
 } PatientList;
 
+Patient *patients = NULL;
+int patientCount = 0;
+int patientCapacity = INITIAL_CAPACITY; // Start with 10 or so
+
 
 //create a patient list in the global level
 PatientList patientList;
@@ -48,6 +52,8 @@ void doctorScheduleMenu();
 void menu();
 int numberInput();
 void initializePatientList(PatientList *list);
+void loadPatientsFromFile(const char *filename);
+void savePatientsToFile(const char *filename);
 
 
 //main to display
@@ -55,6 +61,8 @@ int main(void) {
 
     //initialize the patient list
     initializePatientList(&patientList);
+    //load patients from file
+    loadPatientsFromFile("patients.txt");
     //call the menu;
     menu();
     return 0;
@@ -96,7 +104,8 @@ void menu() {
                 doctorScheduleMenu();
                 break;
             case 6:
-                printf("Exiting.");
+                printf("Saving and exiting...\n");
+                savePatientsToFile("patients.txt");
                 return;
             default:
                 printf("invalid Choice try again!\n");
@@ -372,5 +381,76 @@ void doctorScheduleMenu() {
         }
     } while (choice != 3);
 }
+
+void savePatientsToFile(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Error opening file for writing patient data.\n");
+        return;
+    }
+
+    for (int i = 0; i < patientList.count; i++) {
+        Patient p = patientList.records[i];
+        if (p.patientId != 0) {
+            fprintf(file, "%d|%s|%d|%s|%d\n",
+                    p.patientId,
+                    p.name,
+                    p.age,
+                    p.diagnosis,
+                    p.roomNumber);
+        }
+    }
+
+    fclose(file);
+    printf("Patient data saved to file.\n");
+}
+
+
+void loadPatientsFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("No saved patient data found.\n");
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        if (patientList.count >= patientList.capacity) {
+            patientList.capacity *= 2;
+            Patient *temp = realloc(patientList.records, patientList.capacity * sizeof(Patient));
+            if (temp == NULL) {
+                printf("Memory allocation failed while loading patients.\n");
+                fclose(file);
+                return;
+            }
+            patientList.records = temp;
+        }
+
+        Patient *p = &patientList.records[patientList.count];
+
+        char *token = strtok(line, "|");
+        p->patientId = atoi(token);
+
+        token = strtok(NULL, "|");
+        strcpy(p->name, token);
+
+        token = strtok(NULL, "|");
+        p->age = atoi(token);
+
+        token = strtok(NULL, "|");
+        strcpy(p->diagnosis, token);
+
+        token = strtok(NULL, "|");
+        p->roomNumber = atoi(token);
+
+        patientList.count++;
+    }
+
+    fclose(file);
+    printf("Patient data loaded from file.\n");
+}
+
+
+
 
 
