@@ -54,6 +54,20 @@ void loadDoctorScheduleFromFile(const char *filename);
 void saveDoctorScheduleToFile(const char *filename);
 PatientNode* createPatientNode(int id);
 void freePatientList(PatientNode *head);
+int getLastId(PatientNode *head) {
+    if (head == NULL) {
+        return 1;  // Or another value indicating an empty list.
+    }
+    int maxId = 1;
+    PatientNode *current = head;
+    while (current != NULL) {
+        if (current->data.patientId > maxId) {
+            maxId = current->data.patientId;
+        }
+        current = current->next;
+    }
+    return maxId + 1;
+}
 
 
 
@@ -65,6 +79,7 @@ int main(void) {
     loadDoctorScheduleFromFile("schedule.txt");
     //load patients from file
     loadPatientsFromFile("patients.txt", &head);
+    currentId = getLastId(head);
     //call the menu;
     menu();
     return 0;
