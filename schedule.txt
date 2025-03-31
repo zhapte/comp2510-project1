@@ -1,4 +1,4 @@
-Monday|Morning|Dr.Cheong
+Monday|Morning|Dr.Richards
 Monday|Afternoon|Dr.John
 Monday|Evening|Dr.Smith
 Tuesday|Morning|Dr.Smith
@@ -16,6 +16,6 @@ Friday|Evening|Dr.Duval
 Saturday|Morning|Dr.Anderson
 Saturday|Afternoon|Dr.Anderson
 Saturday|Evening|Dr.Richards
-Sunday|Morning|Dr.Cheong
+Sunday|Morning|Dr.Roberts
 Sunday|Afternoon|Dr.Cheong
 Sunday|Evening|Dr.Cheong

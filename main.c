@@ -6,6 +6,24 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#ifdef _WIN32
+    #include <direct.h>
+    #define MKDIR(dir) _mkdir(dir)
+#else
+    #include <sys/stat.h>
+    #define MKDIR(dir) mkdir(dir, 0700)
+#endif
+
+
+#ifdef _WIN32
+    #include <direct.h>
+    #define MKDIR(dir) _mkdir(dir)
+#else
+    #include <sys/stat.h>
+    #define MKDIR(dir) mkdir(dir, 0700)
+#endif
+
+
 //the max number of patient to be added to the record
 #define INITIAL_CAPACITY 10
 
@@ -23,6 +41,7 @@ typedef struct{
     int     age;
     char    diagnosis[100];
     int     roomNumber;
+    char    admissionDate[11];
 }Patient;
 
 
@@ -61,6 +80,7 @@ void restoreScheduleFromFile(const char *filename);
 void listBackupFiles(const char *prefix);
 PatientNode* createPatientNode(int id);
 void freePatientList(PatientNode *head);
+void reportMenu();
 int getLastId(PatientNode *head) {
     if (head == NULL) {
         return 1;  // Or another value indicating an empty list.
@@ -109,6 +129,7 @@ void menu() {
         printf("7. Backup Data\n");
         printf("8. Restore Patient Data\n");
         printf("9. Restore Doctor Schedule\n");
+        printf("10. Reports and Analytics\n");
         scanf("%d", &choice);
         getchar();
 
@@ -152,7 +173,7 @@ void menu() {
                 restorePatientsFromFile(fullPath);
 
             }
-            break;
+             break;
             case 9: {
                 char filename[100];
                 listBackupFiles("schedule_");
@@ -164,8 +185,11 @@ void menu() {
                 snprintf(fullPath, sizeof(fullPath), "backup/%s", filename);
                 restoreScheduleFromFile(fullPath);
 
-            }
-            break;
+             }
+                break;
+            case 10:
+                reportMenu();
+                break;
             default:
                 printf("invalid Choice try again!\n");
             break;
@@ -205,6 +229,12 @@ void addPatient(PatientNode **head, int id) {
 
     printf("Enter patient room number: ");
     newNode->data.roomNumber = numberInput();
+
+    // Set admission date to today
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(newNode->data.admissionDate, sizeof(newNode->data.admissionDate), "%Y-%m-%d", t);
+
 
     // Insert the new node at the end of the list
     if (*head == NULL) {
@@ -441,12 +471,13 @@ void savePatientsToFile(const char *filename, PatientNode *head) {
     PatientNode *current = head;
     while (current != NULL) {
         Patient p = current->data;
-        fprintf(file, "%d|%s|%d|%s|%d\n",
+        fprintf(file, "%d|%s|%d|%s|%d|%s\n",
                 p.patientId,
                 p.name,
                 p.age,
                 p.diagnosis,
-                p.roomNumber);
+                p.roomNumber,
+                p.admissionDate);
         current = current->next;
     }
     fclose(file);
@@ -495,6 +526,10 @@ void loadPatientsFromFile(const char *filename, PatientNode **head) {
         token = strtok(NULL, "|");
         if (token != NULL)
             newNode->data.roomNumber = atoi(token);
+
+        token = strtok(NULL, "|");
+        if (token != NULL)
+            strcpy(newNode->data.admissionDate, token);
 
         // Insert the new node at the end of the linked list.
         if (*head == NULL) {
@@ -584,7 +619,7 @@ void backupData() {
 
     struct stat st = {0};
     if (stat("backup", &st) == -1) {
-        mkdir("backup", 0700);
+        mkdir("backup");
     }
 
     char patientBackupFile[100];
@@ -599,7 +634,17 @@ void backupData() {
 }
 
 void restorePatientsFromFile(const char *filename) {
-    loadPatientsFromFile(filename, &head);
+
+        freePatientList(head);
+        head = NULL;
+
+
+        loadPatientsFromFile(filename, &head);
+
+
+        currentId = getLastId(head);
+
+
 }
 
 void restoreScheduleFromFile(const char *filename) {
@@ -630,6 +675,200 @@ void listBackupFiles(const char *prefix) {
         printf("No backups found.\n");
     }
 }
+
+void generateDoctorUtilizationReport(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Error creating doctor utilization report.\n");
+        return;
+    }
+
+    fprintf(file, "Doctor Utilization Report (Weekly)\n\n");
+    fprintf(file, "%-20s | Total Shifts\n", "Doctor");
+    fprintf(file, "----------------------|-------------\n");
+
+    char doctors[100][50];
+    int counts[100] = {0};
+    int doctorCount = 0;
+
+    for (int i = 0; i < DAYS; i++) {
+        for (int j = 0; j < SHIFTS; j++) {
+            char *name = doctorSchedule[i][j];
+            if (strcmp(name, "Unassigned") == 0) continue;
+            int found = 0;
+            for (int k = 0; k < doctorCount; k++) {
+                if (strcmp(doctors[k], name) == 0) {
+                    counts[k]++;
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                strcpy(doctors[doctorCount], name);
+                counts[doctorCount] = 1;
+                doctorCount++;
+            }
+        }
+    }
+
+    for (int i = 0; i < doctorCount; i++) {
+        fprintf(file, "%-20s | %-5d\n", doctors[i], counts[i]);
+    }
+
+    fclose(file);
+    printf("Doctor Utilization Report saved to %s\n", filename);
+}
+
+void generateRoomUsageReport(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Error creating room usage report.\n");
+        return;
+    }
+
+    fprintf(file, "Room Usage Report\n\n");
+    fprintf(file, "%-10s | Patients\n", "Room No.");
+    fprintf(file, "-----------|----------\n");
+
+    int rooms[100] = {0};
+    int roomCounts[100] = {0};
+    int roomTotal = 0;
+
+    PatientNode *current = head;
+    while (current != NULL) {
+        int room = current->data.roomNumber;
+        int found = 0;
+        for (int i = 0; i < roomTotal; i++) {
+            if (rooms[i] == room) {
+                roomCounts[i]++;
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            rooms[roomTotal] = room;
+            roomCounts[roomTotal] = 1;
+            roomTotal++;
+        }
+        current = current->next;
+    }
+
+    for (int i = 0; i < roomTotal; i++) {
+        fprintf(file, "%-10d | %-5d\n", rooms[i], roomCounts[i]);
+    }
+
+    fclose(file);
+    printf("Room Usage Report saved to %s\n", filename);
+}
+
+int parseDate(const char *dateStr, struct tm *outDate) {
+    int year, month, day;
+    if (sscanf(dateStr, "%d-%d-%d", &year, &month, &day) != 3) {
+        return 0; // error
+    }
+
+    outDate->tm_year = year - 1900; // tm_year is years since 1900
+    outDate->tm_mon = month - 1;    // tm_mon is 0-11
+    outDate->tm_mday = day;
+    outDate->tm_hour = 0;
+    outDate->tm_min = 0;
+    outDate->tm_sec = 0;
+    outDate->tm_isdst = -1;
+
+    // Normalize the date and fill in tm_yday
+    mktime(outDate);
+    return 1;
+}
+
+
+void generateAdmissionSummaryReport(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Error creating admission summary report.\n");
+        return;
+    }
+
+    time_t now = time(NULL);
+    struct tm *now_tm = localtime(&now);
+
+    int dayCount = 0, weekCount = 0, monthCount = 0;
+
+    PatientNode *current = head;
+    while (current != NULL) {
+        struct tm admission_tm = {0};
+        if (!parseDate(current->data.admissionDate, &admission_tm)) {
+            current = current->next;
+            continue;
+        }
+
+        if (admission_tm.tm_year == now_tm->tm_year) {
+            if (admission_tm.tm_yday == now_tm->tm_yday)
+                dayCount++;
+            if ((now_tm->tm_yday - admission_tm.tm_yday) < 7 && (now_tm->tm_yday - admission_tm.tm_yday) >= 0)
+                weekCount++;
+            if (admission_tm.tm_mon == now_tm->tm_mon)
+                monthCount++;
+        }
+
+        current = current->next;
+    }
+
+    fprintf(file, "Patient Admission Summary Report\n\n");
+    fprintf(file, "Total admitted today: %d\n", dayCount);
+    fprintf(file, "Total admitted this week: %d\n", weekCount);
+    fprintf(file, "Total admitted this month: %d\n", monthCount);
+
+    fclose(file);
+    printf("Admission Summary Report saved to %s\n", filename);
+}
+
+void reportMenu() {
+    int choice;
+    char filename[100];
+
+    do {
+        printf("\n--- Reporting & Analytics ---\n");
+        printf("1. Doctor Utilization Report\n");
+        printf("2. Room Usage Report\n");
+        printf("3. Patient Admission Summary (Day/Week/Month)\n");
+        printf("4. Exit Report Menu\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        getchar();
+
+        switch (choice) {
+            case 1:
+                printf("Enter filename to save Doctor Report (e.g., doctor_report.txt): ");
+            scanf("%s", filename);
+            getchar();
+            generateDoctorUtilizationReport(filename);
+            break;
+            case 2:
+                printf("Enter filename to save Room Usage Report (e.g., room_report.txt): ");
+            scanf("%s", filename);
+            getchar();
+            generateRoomUsageReport(filename);
+            break;
+            case 3:
+                printf("Enter filename to save Admission Summary (e.g., admissions.txt): ");
+            scanf("%s", filename);
+            getchar();
+            generateAdmissionSummaryReport(filename);
+            break;
+            case 4:
+                printf("Exiting report menu...\n");
+            return;
+            default:
+                printf("Invalid choice. Try again.\n");
+        }
+
+    } while (choice != 4);
+}
+
+
+
+
+
 
 
 
