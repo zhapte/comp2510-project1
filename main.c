@@ -81,6 +81,24 @@ void listBackupFiles(const char *prefix);
 PatientNode* createPatientNode(int id);
 void freePatientList(PatientNode *head);
 void reportMenu();
+
+void writeToDichargeReport(const char *patientName) {
+    char timeToday[11];
+    time_t t = time(NULL);
+    struct tm *tm_info = localtime(&t);
+    strftime(timeToday, 11, "%Y-%m-%d", tm_info);
+
+    FILE *fp = fopen("discharge_report.txt", "a");
+    if (fp == NULL) {
+        perror("Failed to open discharge report file");
+        return;
+    }
+    fprintf(fp, "%s was discharged on %s\n", patientName, timeToday);
+    fclose(fp);
+}
+
+
+
 int getLastId(PatientNode *head) {
     if (head == NULL) {
         return 1;  // Or another value indicating an empty list.
@@ -279,6 +297,7 @@ void dischargePatient(PatientNode **head) {
     while (current != NULL) {
         if (current->data.patientId == id) {
             // Patient found; adjust pointers to remove the node
+            writeToDichargeReport(current->data.name);
             if (prev == NULL) {
                 // Removing the head node
                 *head = current->next;
