@@ -128,30 +128,6 @@ project/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\project.dir\build.make CMakeFiles/project.dir/build
 .PHONY : project/fast
 
-InClassExercise.obj: InClassExercise.c.obj
-.PHONY : InClassExercise.obj
-
-# target to build an object file
-InClassExercise.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\project.dir\build.make CMakeFiles/project.dir/InClassExercise.c.obj
-.PHONY : InClassExercise.c.obj
-
-InClassExercise.i: InClassExercise.c.i
-.PHONY : InClassExercise.i
-
-# target to preprocess a source file
-InClassExercise.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\project.dir\build.make CMakeFiles/project.dir/InClassExercise.c.i
-.PHONY : InClassExercise.c.i
-
-InClassExercise.s: InClassExercise.c.s
-.PHONY : InClassExercise.s
-
-# target to generate assembly for a file
-InClassExercise.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\project.dir\build.make CMakeFiles/project.dir/InClassExercise.c.s
-.PHONY : InClassExercise.c.s
-
 Project.obj: Project.c.obj
 .PHONY : Project.obj
 
@@ -209,9 +185,6 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... project
-	@echo ... InClassExercise.obj
-	@echo ... InClassExercise.i
-	@echo ... InClassExercise.s
 	@echo ... Project.obj
 	@echo ... Project.i
 	@echo ... Project.s
