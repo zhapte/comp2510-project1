@@ -15,24 +15,13 @@
 #endif
 
 
-#ifdef _WIN32
-    #include <direct.h>
-    #define MKDIR(dir) _mkdir(dir)
-#else
-    #include <sys/stat.h>
-    #define MKDIR(dir) mkdir(dir, 0700)
-#endif
-
-
 //the max number of patient to be added to the record
 #define INITIAL_CAPACITY 10
-
 // the number of days in a week: used for the doctors schedule
 #define DAYS 7
 // the number of shifts in a day: morning, afternoon, evening
 #define SHIFTS 3
 
-char doctorSchedule[DAYS][SHIFTS][50];
 
 // structure of the patient record
 typedef struct{
@@ -45,31 +34,45 @@ typedef struct{
 }Patient;
 
 
+//linked list Struct
 typedef struct PatientNode {
     Patient data;
     struct PatientNode *next;
 } PatientNode;
 
 
+//global values to use through out the program.
 int currentId = 1;
 PatientNode *head = NULL;
-
-
-
+char doctorSchedule[DAYS][SHIFTS][50];
+int rooms[100] = {0};
 
 
 //function prototype.
+//patient management functions
 void addPatient(PatientNode **head, int id);
 void displayPatient(PatientNode *head);
 void dischargePatient(PatientNode **head);
 void searchPatient(PatientNode *head);
-int findPosition(int input);
+void freePatientList(PatientNode *head);
+PatientNode* createPatientNode(int id);
+int numberInput();
+int isEmptyRoom(int roomnumber);
+
+
+//doctors scheduling functinos
 void initializeSchedule();
 void displaySchedule();
 void assignDoctor();
-void doctorScheduleMenu();
+
+
+//menu fuctions
 void menu();
-int numberInput();
+void reportMenu();
+void doctorScheduleMenu();
+
+
+//functions to do file back up and restore fucntions
 void loadPatientsFromFile(const char *filename, PatientNode **head);
 void savePatientsToFile(const char *filename, PatientNode *head);
 void loadDoctorScheduleFromFile(const char *filename);
@@ -78,48 +81,13 @@ void backupData();
 void restorePatientsFromFile(const char *filename);
 void restoreScheduleFromFile(const char *filename);
 void listBackupFiles(const char *prefix);
-PatientNode* createPatientNode(int id);
-void freePatientList(PatientNode *head);
-void reportMenu();
-
-void writeToDichargeReport(const char *patientName) {
-    char timeToday[11];
-    time_t t = time(NULL);
-    struct tm *tm_info = localtime(&t);
-    strftime(timeToday, 11, "%Y-%m-%d", tm_info);
-
-    FILE *fp = fopen("discharge_report.txt", "a");
-    if (fp == NULL) {
-        perror("Failed to open discharge report file");
-        return;
-    }
-    fprintf(fp, "%s was discharged on %s\n", patientName, timeToday);
-    fclose(fp);
-}
+void writeToDichargeReport(const char *patientName);
+int getLastId(PatientNode *head);
 
 
-
-int getLastId(PatientNode *head) {
-    if (head == NULL) {
-        return 1;  // Or another value indicating an empty list.
-    }
-    int maxId = 1;
-    PatientNode *current = head;
-    while (current != NULL) {
-        if (current->data.patientId > maxId) {
-            maxId = current->data.patientId;
-        }
-        current = current->next;
-    }
-    return maxId + 1;
-}
-
-
-
-//main to display
+//main function the entry point of the program
 int main(void) {
 
-    //initialize the patient list
     //load doctor schedule from file
     loadDoctorScheduleFromFile("schedule.txt");
     //load patients from file
@@ -131,6 +99,7 @@ int main(void) {
 }
 
 
+//function to display the main menu
 void menu() {
     //choice for the user to enter
     int choice;
@@ -185,11 +154,9 @@ void menu() {
                 printf("Enter the exact filename to restore (e.g., patients_20250330_1430.txt): ");
                 scanf("%s", filename);
                 getchar();
-
                 char fullPath[150];
                 snprintf(fullPath, sizeof(fullPath), "backup/%s", filename);
                 restorePatientsFromFile(fullPath);
-
             }
              break;
             case 9: {
@@ -215,6 +182,8 @@ void menu() {
     }while(choice != 6);
 }
 
+
+//returns a new node to add to the linked list
 PatientNode* createPatientNode(int id) {
     PatientNode *newNode = malloc(sizeof(PatientNode));
     if (newNode == NULL) {
@@ -226,10 +195,12 @@ PatientNode* createPatientNode(int id) {
     return newNode;
 }
 
+
 // function to add a patient to the record
 void addPatient(PatientNode **head, int id) {
     PatientNode *newNode = createPatientNode(id);
 
+    //assign the global id to the patient
     printf("Adding Patient ID: %d\n", newNode->data.patientId);
 
     // Get patient details
@@ -237,17 +208,27 @@ void addPatient(PatientNode **head, int id) {
     fgets(newNode->data.name, 50, stdin);
     newNode->data.name[strcspn(newNode->data.name, "\n")] = '\0';
 
-    printf("Enter patient age: ");
-    newNode->data.age = numberInput();
+    do {
+        printf("Enter patient age 1 - 99: ");
+        newNode->data.age = numberInput();
+    }while (newNode->data.age >= 100);
+
 
 
     printf("Enter patient diagnosis: ");
     fgets(newNode->data.diagnosis, 100, stdin);
     newNode->data.diagnosis[strcspn(newNode->data.diagnosis, "\n")] = '\0';
 
-    printf("Enter patient room number: ");
-    newNode->data.roomNumber = numberInput();
+    int roomnumber;
 
+    do {
+        printf("Enter patient room number 1 - 100: ");
+        roomnumber = numberInput();
+    }while (roomnumber > 100 || isEmptyRoom(roomnumber));
+
+    rooms[roomnumber-1] = 1;
+
+    newNode->data.roomNumber = roomnumber;
     // Set admission date to today
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
@@ -267,12 +248,22 @@ void addPatient(PatientNode **head, int id) {
     printf("Patient added successfully.\n");
 }
 
+int isEmptyRoom(int roomnumber) {
+    if (rooms[roomnumber-1] == 1) {
+        printf("Room is full Try again");
+    }
+    return rooms[roomnumber-1];
+}
+
+
+//function to display all the patient
 void displayPatient(PatientNode *head) {
     if (head == NULL) {
         printf("No patients enrolled yet.\n");
         return;
     }
 
+    //print all the patient if the the list is not empty
     PatientNode *current = head;
     while (current != NULL){
         Patient p = current->data;
@@ -282,6 +273,8 @@ void displayPatient(PatientNode *head) {
     }
 }
 
+
+//discharge patient from the hospital
 void dischargePatient(PatientNode **head) {
     if (head == NULL) {
         printf("No patients enrolled yet.\n");
@@ -291,12 +284,15 @@ void dischargePatient(PatientNode **head) {
     PatientNode *current = *head;
     PatientNode *prev = NULL;
 
+    //take id of the patient
     printf("Please enter the id of the patient");
     int id = numberInput();
 
+    //if the list is not empty then search for the pateint
     while (current != NULL) {
         if (current->data.patientId == id) {
             // Patient found; adjust pointers to remove the node
+            rooms[current->data.roomNumber-1] = 0;
             writeToDichargeReport(current->data.name);
             if (prev == NULL) {
                 // Removing the head node
@@ -316,6 +312,8 @@ void dischargePatient(PatientNode **head) {
     printf("Patient with ID %d not found.\n", id);
 }
 
+
+//function to search for the patient in the list
 void searchPatient(PatientNode *head) {
     if (head == NULL) {
         printf("No patients enrolled yet.\n");
@@ -338,6 +336,7 @@ void searchPatient(PatientNode *head) {
 
 }
 
+//after all is finished free up the memoryf or the linked list so that memory wont leak
 void freePatientList(PatientNode *head) {
     PatientNode *current = head;
     while (current != NULL) {
@@ -481,6 +480,11 @@ void doctorScheduleMenu() {
     } while (choice != 3);
 }
 
+// Saves the patient linked list to a file in a pipe-separated format.
+// Parameters:
+//   - filename: The name of the file to save to.
+//   - head: Pointer to the head of the patient linked list.
+
 void savePatientsToFile(const char *filename, PatientNode *head) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
@@ -503,6 +507,10 @@ void savePatientsToFile(const char *filename, PatientNode *head) {
     printf("Patient data saved to file.\n");
 }
 
+// Loads patient data from a file and populates the patient linked list.
+// Parameters:
+//   - filename: The name of the file to read from.
+//   - head: Double pointer to the head of the patient linked list.
 
 void loadPatientsFromFile(const char *filename, PatientNode **head) {
     FILE *file = fopen(filename, "r");
@@ -566,6 +574,10 @@ void loadPatientsFromFile(const char *filename, PatientNode **head) {
     printf("Patient data loaded from file.\n");
 }
 
+// Saves the current doctor schedule to a file in a pipe-separated format.
+// Parameters:
+//   - filename: The name of the file to save to.
+
 void saveDoctorScheduleToFile(const char *filename) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
@@ -588,6 +600,10 @@ void saveDoctorScheduleToFile(const char *filename) {
     printf("Doctor schedule saved to file.\n");
 }
 
+// Loads the doctor schedule from a file and updates the doctorSchedule array.
+// If the file is not found, it initializes a default schedule.
+// Parameters:
+//   - filename: The name of the file to load from.
 void loadDoctorScheduleFromFile(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -626,12 +642,18 @@ void loadDoctorScheduleFromFile(const char *filename) {
 
 }
 
+// Generates a timestamp string in the format "YYYYMMDD_HHMM".
+// Parameters:
+//   - buffer: The character array to store the timestamp.
+//   - size: The size of the buffer.
 void getCurrentTimeStamp(char *buffer, int size) {
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
     strftime(buffer, size, "%Y%m%d_%H%M", t);
 }
 
+// Creates a timestamped backup of both the patient data and doctor schedule.
+// Backup files are stored in a `backup` directory, which is created if missing.
 void backupData() {
     char timestamp[20];
     getCurrentTimeStamp(timestamp, sizeof(timestamp));
@@ -652,24 +674,34 @@ void backupData() {
     printf("Backup completed: %s and %s\n", patientBackupFile, scheduleBackupFile);
 }
 
+// Restores patient data from a given file.
+// Frees existing list and repopulates it with the file content.
+// Parameters:
+//   - filename: The file to load the patient data from.
+
 void restorePatientsFromFile(const char *filename) {
 
         freePatientList(head);
         head = NULL;
 
-
         loadPatientsFromFile(filename, &head);
 
-
         currentId = getLastId(head);
-
-
 }
+
+// Restores the doctor schedule from a given file.
+// Initializes the schedule first before loading.
+// Parameters:
+//   - filename: The file to load the schedule from.
 
 void restoreScheduleFromFile(const char *filename) {
     initializeSchedule();
     loadDoctorScheduleFromFile(filename);
 }
+
+// Lists all backup files that match a specific prefix (e.g., "patients_" or "schedule_").
+// Parameters:
+//   - prefix: The prefix used to filter matching backup files.
 
 void listBackupFiles(const char *prefix) {
     DIR *dir;
@@ -694,6 +726,10 @@ void listBackupFiles(const char *prefix) {
         printf("No backups found.\n");
     }
 }
+
+// Generates a report showing how many shifts each doctor is scheduled for in a week.
+// Parameters:
+//   - filename: The name of the file to write the report to.
 
 void generateDoctorUtilizationReport(const char *filename) {
     FILE *file = fopen(filename, "w");
@@ -738,6 +774,10 @@ void generateDoctorUtilizationReport(const char *filename) {
     printf("Doctor Utilization Report saved to %s\n", filename);
 }
 
+// Generates a report summarizing the number of patients assigned to each room.
+// Parameters:
+//   - filename: The name of the file to write the report to.
+
 void generateRoomUsageReport(const char *filename) {
     FILE *file = fopen(filename, "w");
     if (!file) {
@@ -780,6 +820,13 @@ void generateRoomUsageReport(const char *filename) {
     printf("Room Usage Report saved to %s\n", filename);
 }
 
+// Parses a date string in "YYYY-MM-DD" format into a struct tm.
+// Parameters:
+//   - dateStr: The input date string.
+//   - outDate: Output struct tm to be filled.
+// Returns:
+//   - 1 if successful, 0 otherwise.
+
 int parseDate(const char *dateStr, struct tm *outDate) {
     int year, month, day;
     if (sscanf(dateStr, "%d-%d-%d", &year, &month, &day) != 3) {
@@ -799,6 +846,9 @@ int parseDate(const char *dateStr, struct tm *outDate) {
     return 1;
 }
 
+// Generates a report summarizing patient admissions for today, this week, and this month.
+// Parameters:
+//   - filename: The name of the file to write the report to.
 
 void generateAdmissionSummaryReport(const char *filename) {
     FILE *file = fopen(filename, "w");
@@ -841,6 +891,8 @@ void generateAdmissionSummaryReport(const char *filename) {
     printf("Admission Summary Report saved to %s\n", filename);
 }
 
+// Displays a menu to generate different types of reports.
+// Loops until the user chooses to exit.
 void reportMenu() {
     int choice;
     char filename[100];
@@ -884,12 +936,42 @@ void reportMenu() {
     } while (choice != 4);
 }
 
+// Appends a patient's discharge event to a report file, including the date.
+// Parameters:
+//   - patientName: Name of the discharged patient.
 
+void writeToDichargeReport(const char *patientName) {
+    char timeToday[11];
+    time_t t = time(NULL);
+    struct tm *tm_info = localtime(&t);
+    strftime(timeToday, 11, "%Y-%m-%d", tm_info);
 
+    FILE *fp = fopen("discharge_report.txt", "a");
+    if (fp == NULL) {
+        perror("Failed to open discharge report file");
+        return;
+    }
+    fprintf(fp, "%s was discharged on %s\n", patientName, timeToday);
+    fclose(fp);
+}
 
+// Retrieves the next available patient ID based on the current list.
+// Parameters:
+//   - head: The head of the patient linked list.
+// Returns:
+//   - The next available ID (max ID + 1).
 
-
-
-
-
-
+int getLastId(PatientNode *head){
+    if (head == NULL) {
+        return 1;  // Or another value indicating an empty list.
+    }
+    int maxId = 1;
+    PatientNode *current = head;
+    while (current != NULL) {
+        if (current->data.patientId > maxId) {
+            maxId = current->data.patientId;
+        }
+        current = current->next;
+    }
+    return maxId + 1;
+}
