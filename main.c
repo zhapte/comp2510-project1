@@ -169,7 +169,6 @@ void menu() {
                 char fullPath[150];
                 snprintf(fullPath, sizeof(fullPath), "backup/%s", filename);
                 restoreScheduleFromFile(fullPath);
-
              }
                 break;
             case 10:
@@ -248,9 +247,10 @@ void addPatient(PatientNode **head, int id) {
     printf("Patient added successfully.\n");
 }
 
+//checked if the patient can be admitted to the room they want
 int isEmptyRoom(int roomnumber) {
     if (rooms[roomnumber-1] == 1) {
-        printf("Room is full Try again");
+        printf("Room is full Try again\n");
     }
     return rooms[roomnumber-1];
 }
@@ -525,18 +525,12 @@ void loadPatientsFromFile(const char *filename, PatientNode **head) {
         line[strcspn(line, "\n")] = '\0';
 
         // Allocate a new node.
-        PatientNode *newNode = malloc(sizeof(PatientNode));
-        if (newNode == NULL) {
-            perror("Failed to allocate memory for new patient node");
-            fclose(file);
-            return;
-        }
-        newNode->next = NULL;
+        PatientNode *newNode;
 
         // Parse the line using strtok.
         char *token = strtok(line, "|");
         if (token != NULL)
-            newNode->data.patientId = atoi(token);
+            newNode =  createPatientNode(atoi(token));
 
         token = strtok(NULL, "|");
         if (token != NULL)
@@ -553,6 +547,7 @@ void loadPatientsFromFile(const char *filename, PatientNode **head) {
         token = strtok(NULL, "|");
         if (token != NULL)
             newNode->data.roomNumber = atoi(token);
+            rooms[atoi(token) -1] = 1;
 
         token = strtok(NULL, "|");
         if (token != NULL)
